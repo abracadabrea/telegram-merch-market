@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Каталог мерча</title>
+</head>
+<body>
+    <!-- Telegram Login Widget -->
+<script async src="https://telegram.org/js/telegram-widget.js?7"
+        data-telegram-login="merch_hub_bot" 
+        data-size="large"
+        data-userpic="false"
+        data-request-access="write"
+        onlogin="onTelegramAuth(user)"></script>
+
+<script>
+  function onTelegramAuth(user) {
+    // user — это объект с id, username, name и подписью
+    localStorage.setItem('tg_user', JSON.stringify(user));
+    alert('Привет, ' + user.first_name + '!');
+    // Можно обновить интерфейс (показать личный кабинет, скрыть кнопку логина и т.д.)
+  }
+</script>
+
+  <h1>Каталог мерча</h1>
+  <div id="catalog"></div>
+
+  <script>
+    // Загрузить товары с backend
+    fetch('http://localhost:3001/merch')
+      .then(response => response.json())
+      .then(data => {
+        const catalogDiv = document.getElementById('catalog');
+        data.forEach(item => {
+          const itemDiv = document.createElement('div');
+          itemDiv.style.border = "1px solid #aaa";
+          itemDiv.style.margin = "10px";
+          itemDiv.style.padding = "10px";
+          itemDiv.innerHTML = `
+            <h3>${item.title}</h3>
+            <p>${item.description}</p>
+            <p>Цена: ${item.price} ₽</p>
+            <button onclick="buy(${item.id}, '${item.title}')">Купить</button>
+          `;
+          catalogDiv.appendChild(itemDiv);
+        });
+      });
+
+    // Функция покупки (оформляет заказ)
+    function buy(merch_id, merch_title) {
+      const buyer_name = prompt('Введите ваше имя:');
+      const buyer_contact = prompt('Введите ваш телефон или Telegram:');
+      if (!buyer_name || !buyer_contact) return alert('Нужно ввести имя и контакт!');
+      fetch('http://localhost:3001/order', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ merch_id, buyer_name, buyer_contact })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.order_id) {
+          alert('Спасибо! Заказ оформлен на ' + merch_title);
+        } else {
+          alert('Ошибка: ' + (data.error || 'Не удалось оформить заказ'));
+        }
+      });
+    }
+  </script>
+</body>
+</html>
